@@ -3,11 +3,47 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestCafeCount(t *testing.T) {
+	handler := http.HandlerFunc(mainHandle)
+
+	requests := []struct {
+		count int
+		want  int
+	}{
+		{0, 0},
+		{1, 1},
+		{2, 2},
+		{100, len(cafeList["moscow"])},
+	}
+
+	for _, v := range requests {
+		countStr := strconv.Itoa(v.count)
+
+		response := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/cafe?city=moscow&count="+countStr, nil)
+		handler.ServeHTTP(response, req)
+
+		actResult := strings.Split(response.Body.String(), ",")
+		if len(actResult) == 1 && response.Body.String() == "" {
+			actResult = nil
+		}
+
+		require.Equal(t, http.StatusOK, response.Code)
+		assert.Equal(t, v.want, len(actResult))
+	}
+}
+
+func TestCafeSearch(t *testing.T) {
+
+}
 
 func TestCafeNegative(t *testing.T) {
 	handler := http.HandlerFunc(mainHandle)

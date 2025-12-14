@@ -21,7 +21,7 @@ func TestCafeCount(t *testing.T) {
 		{0, 0},
 		{1, 1},
 		{2, 2},
-		{100, len(cafeList["moscow"])},
+		{100, min(100, len(cafeList["moscow"]))},
 	}
 
 	for _, v := range requests {
@@ -31,12 +31,13 @@ func TestCafeCount(t *testing.T) {
 		req := httptest.NewRequest("GET", "/cafe?city=moscow&count="+countStr, nil)
 		handler.ServeHTTP(response, req)
 
+		require.Equal(t, http.StatusOK, response.Code)
+
 		actResult := strings.Split(response.Body.String(), ",")
 		if len(actResult) == 1 && response.Body.String() == "" {
 			actResult = nil
 		}
 
-		require.Equal(t, http.StatusOK, response.Code)
 		assert.Equal(t, v.want, len(actResult))
 	}
 }
@@ -60,16 +61,18 @@ func TestCafeSearch(t *testing.T) {
 		require.Equal(t, http.StatusOK, response.Code)
 
 		searchResult := strings.Split(response.Body.String(), ",")
-		if len(searchResult) == 1 && response.Body.String() == "" {
+		if response.Body.String() == "" {
 			searchResult = nil
 		}
 
+		assert.Len(t, searchResult, v.wantCount)
+		// assert.Equal(t, v.wantCount, len(searchResult))
+
 		for _, cof := range searchResult {
 			fulCafeName := strings.ToLower(cof)
-			sameName := strings.Contains(fulCafeName, strings.ToLower(v.search))
+			sameName := assert.Contains(t, fulCafeName, strings.ToLower(v.search))
 			assert.Equal(t, sameName, true)
 		}
-		assert.Equal(t, v.wantCount, len(searchResult))
 	}
 }
 

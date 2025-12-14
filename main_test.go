@@ -42,7 +42,35 @@ func TestCafeCount(t *testing.T) {
 }
 
 func TestCafeSearch(t *testing.T) {
+	handler := http.HandlerFunc(mainHandle)
 
+	requests := []struct {
+		search    string // передаваемое значение search
+		wantCount int    // ожидаемое количество кафе в ответе
+	}{
+		{"фасоль", 0},
+		{"кофе", 2},
+		{"вилка", 1},
+	}
+	for _, v := range requests {
+		response := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/cafe?city=moscow&search="+v.search, nil)
+		handler.ServeHTTP(response, req)
+
+		require.Equal(t, http.StatusOK, response.Code)
+
+		searchResult := strings.Split(response.Body.String(), ",")
+		if len(searchResult) == 1 && response.Body.String() == "" {
+			searchResult = nil
+		}
+
+		for _, cof := range searchResult {
+			fulCafeName := strings.ToLower(cof)
+			sameName := strings.Contains(fulCafeName, strings.ToLower(v.search))
+			assert.Equal(t, sameName, true)
+		}
+		assert.Equal(t, v.wantCount, len(searchResult))
+	}
 }
 
 func TestCafeNegative(t *testing.T) {
